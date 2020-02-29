@@ -1,58 +1,53 @@
-const router = require("express").Router();
-
+const db = require("../db/db.json");
 const fs = require("fs");
-let db = require("../db/db.json");
-const wFile = require("../db/writeDbFiles");
-const rFile = require("../db/readDbFile");
-console.log("db:", db);
 
-
-router.get("/notes", function(req, res) {
-  console.log("GET");
-  rFile().then(function(newDB) {
-    console.log("back from read:", JSON.parse(newDB));
-    res.json(JSON.parse(newDB));
-  });
-});
-
-router.post("/notes", function(req, res) {
-  console.log("POST", req.body);
-  var id = 1;
-  if (db.length !== 0) {
-    id = db[db.length - 1].id + 1;
-  }
-  var newNote = {
-    id: id,
-    title: req.body.title,
-    text: req.body.text
-  };
-  db.push(newNote);
-  //console.log(res)
-
-  wFile(db).then(function(data) {
-    //console.log(response)
-    console.log("db after post:", data);
-
-    res.json("save done");
+module.exports = function(app) {
+  app.get("/api/notes", function(req, res) {
+    res.send(db);
   });
 
-});
 
-router.delete("/notes/:id", function(req, res) {
-  console.log("delete this id:", req.params.id);
-  
+//   If POST request, create new note
+  app.post("/api/notes", function(req, res) {
 
-    console.log("DB:", db);
-    var newDB = db.filter(note => note.id !== parseInt(req.params.id));
-    console.log("newDB", newDB);
-    db = newDB
-    //
-    wFile(db).then(function(data) {
-      //console.log(response)
-      console.log("db after post:", data);
-      res.json("delete done");
+    let noteId = ''
+    let newNote = {
+      id: noteId,
+      title: req.body.title,
+      text: req.body.text
+    };
+
+    fs.readFile("./db/db.json", "utf8", (err, data) => {
+      if (err) throw err;
+
+      const allNotes = JSON.parse(data);
+
+      allNotes.push(newNote);
+
+      fs.writeFile("./db/db.json", JSON.stringify(allNotes, null, 2), err => {
+        if (err) throw err;
+        res.send(db);
+        console.log("Note added")
+      });
     });
-  //});
-});
+  });
 
-module.exports = router;
+  //   If DELETE request, delete note with id of req.params.id
+  app.delete("/api/notes/:id", (req, res) => {
+
+    let noteId = req.params.id;
+
+    fs.readFile("./db/db.json", "utf8", (err, data) => {
+      if (err) throw err;
+
+      const allNotes = JSON.parse(data);
+      const newAllNotes = allNotes.filter(note => note.id != noteId);
+
+      fs.writeFile("./db/db.json", JSON.stringify(newAllNotes, null, 2), err => {
+        if (err) throw err;
+        res.send(db);
+        console.log("note deleted.")
+      });
+    });
+  });
+};
