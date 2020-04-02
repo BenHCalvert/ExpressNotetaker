@@ -8,4 +8,4 @@ An application that can be used to write, save, and delete notes built using Exp
 
 ## See it in action:
 
-![](ExpressNoteTaker.gif)
+![](NoteTaker.gif)
